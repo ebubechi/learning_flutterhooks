@@ -10,21 +10,44 @@ void main() {
   ));
 }
 
-Stream<String> getTime() => Stream.periodic(
-      const Duration(seconds: 1),
-      (_) => DateTime.now().toIso8601String(),
-    );
+// Stream<String> getTime() => Stream.periodic(
+//       const Duration(seconds: 1),
+//       (_) => DateTime.now().toIso8601String(),
+//     );
 
 class HomePage extends HookWidget {
   const HomePage({super.key});
+
   @override
   Widget build(BuildContext context) {
-    final dataTime = useStream(getTime());
+    // final dataTime = useStream(getTime());
+    final controller = useTextEditingController();
+    final text = useState('');
+
+    useEffect(
+      () {
+        controller.addListener(() {
+          text.value = controller.text;
+        });
+        return null;
+      },
+      [controller],
+    );
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(dataTime.data ?? 'Hey There!'),
+        title: const Text('Hey There!'),
+        // title: Text(dataTime.data ?? 'Hey There!'),
       ),
-      body: Container(),
+      body: Column(
+        children: [
+          TextField(
+            controller: controller,
+          ),
+          const SizedBox(height: 20.0,),
+          Text('You typed ${text.value}'),
+        ],
+      ),
     );
   }
 }
