@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -47,23 +48,87 @@ class CountDown extends ValueNotifier<int> {
   }
 }
 
+const uri =
+    'https://www.thewowstyle.com/wp-content/uploads/2015/01/images-of-nature-4.jpg';
+const imageHeight = 300.0;
+
+extension Normalize on num {
+  num normalized(
+    num selfRangeMin,
+    num selfRangeMax, [
+    num normalizedRangeMin = 0.0,
+    num normalizedRangeMax = 1.0,
+  ]) =>
+      (normalizedRangeMax - normalizedRangeMin) *
+          ((this - selfRangeMin) / (selfRangeMax - selfRangeMin)) +
+      normalizedRangeMin;
+}
+
 class HomePage extends HookWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final countDown = useMemoized(() => CountDown(from: 20));
-    final notifier = useListenable(countDown);
+    final opacity = useAnimationController(
+      duration: const Duration(seconds: 1),
+      initialValue: 1.0,
+      lowerBound: 0.0,
+      upperBound: 1.0,
+    );
+    final size = useAnimationController(
+      duration: const Duration(seconds: 1),
+      initialValue: 1.0,
+      lowerBound: 0.0,
+      upperBound: 1.0,
+    );
+
+    final controller = useScrollController();
+
+    useEffect(() {
+      controller.addListener(() {
+        final newOpacity = max(imageHeight - controller.offset, 0.0);
+        final normalized = newOpacity.normalized(0.0, imageHeight).toDouble();
+        opacity.value = normalized;
+        size.value = normalized;
+      });
+      return null;
+    }, [controller]);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Hey There!'),
         // title: Text(dataTime.data ?? 'Hey There!'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(25.0),
-        child: Text(
-          notifier.value.toString(),
-        ),
+      body: Column(
+        children: [
+          SizeTransition(
+            sizeFactor: size,
+            axis: Axis.vertical,
+            axisAlignment: -1.0,
+            child: FadeTransition(
+              opacity: opacity,
+              child: Image.network(
+                uri,
+                height: imageHeight,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: ListView.builder(
+                controller: controller,
+                itemCount: 100,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    title: Text('Person ${index + 1}'),
+                  );
+                },
+              ),
+            ),
+          )
+        ],
       ),
     );
   }
